@@ -1,6 +1,6 @@
 export const cloudinaryConfig = {
   cloudName: 'dwnzxkata',
-  uploadPreset: 'ml_default'
+  uploadPreset: 'foxncici'
 };
 
 export const uploadToCloudinary = async (file) => {
@@ -20,7 +20,7 @@ export const uploadToCloudinary = async (file) => {
     if (!response.ok) {
       const errorData = await response.text();
       console.error('Cloudinary error:', errorData);
-      throw new Error('Upload failed. Please check your Cloudinary settings.');
+      throw new Error('Upload failed. Please try again.');
     }
     
     const data = await response.json();

@@ -1,4 +1,5 @@
 import { useAuth } from '@/context/AuthContext';
+import { useTheme } from '@/context/ThemeContext';
 import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -6,11 +7,13 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
 export default function Navbar() {
   const { currentUser, logout } = useAuth();
+  const { darkMode, toggleDarkMode } = useTheme();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -23,7 +26,7 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="sticky top-0 z-50 backdrop-blur-xl bg-white/80 border-b border-gray-200">
+    <nav className="sticky top-0 z-50 backdrop-blur-xl bg-white/80 dark:bg-gray-900/80 border-b border-gray-200 dark:border-gray-700">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14 sm:h-16">
           <div className="flex items-center gap-4 sm:gap-8">
@@ -39,7 +42,7 @@ export default function Navbar() {
               size="sm" 
               onClick={() => navigate('/')}
               data-testid="nav-home-btn"
-              className="hidden sm:flex"
+              className="hidden sm:flex dark:text-gray-300 dark:hover:bg-gray-800"
             >
               <span className="material-icons text-xl mr-2">home</span>
               Home
@@ -52,9 +55,22 @@ export default function Navbar() {
               size="sm"
               onClick={() => navigate('/')}
               data-testid="nav-home-mobile"
-              className="sm:hidden"
+              className="sm:hidden dark:text-gray-300 dark:hover:bg-gray-800"
             >
               <span className="material-icons text-xl">home</span>
+            </Button>
+
+            {/* Dark Mode Toggle */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleDarkMode}
+              data-testid="dark-mode-toggle"
+              className="dark:text-gray-300 dark:hover:bg-gray-800"
+            >
+              <span className="material-icons text-xl">
+                {darkMode ? 'light_mode' : 'dark_mode'}
+              </span>
             </Button>
             
             <DropdownMenu>
@@ -67,10 +83,11 @@ export default function Navbar() {
                   <AvatarFallback>{currentUser?.displayName?.[0]}</AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent align="end" className="w-48 dark:bg-gray-800 dark:border-gray-700">
                 <DropdownMenuItem 
                   onClick={() => navigate(`/profile/${currentUser?.uid}`)}
                   data-testid="menu-profile-btn"
+                  className="dark:text-gray-300 dark:hover:bg-gray-700"
                 >
                   <span className="material-icons text-lg mr-2">person</span>
                   Profile
@@ -78,9 +95,19 @@ export default function Navbar() {
                 <DropdownMenuItem 
                   onClick={() => navigate('/settings')}
                   data-testid="menu-settings-btn"
+                  className="dark:text-gray-300 dark:hover:bg-gray-700"
                 >
                   <span className="material-icons text-lg mr-2">settings</span>
                   Settings
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="dark:bg-gray-700" />
+                <DropdownMenuItem 
+                  onClick={handleLogout}
+                  data-testid="menu-logout-btn"
+                  className="text-red-600 dark:text-red-400 dark:hover:bg-gray-700"
+                >
+                  <span className="material-icons text-lg mr-2">logout</span>
+                  Logout
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/firebase/config';
-import { doc, updateDoc, arrayUnion, arrayRemove, collection, addDoc, query, where, getDocs, deleteDoc } from 'firebase/firestore';
+import { doc, updateDoc, arrayUnion, arrayRemove, collection, addDoc, query, where, getDocs, deleteDoc, getDoc } from 'firebase/firestore';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -28,9 +28,26 @@ export default function Post({ post, postId, onPostDeleted, onPostUpdated }) {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editContent, setEditContent] = useState(post.content || '');
   const [saving, setSaving] = useState(false);
+  const [username, setUsername] = useState('');
 
   const isLiked = likes.includes(currentUser?.uid);
   const isOwnPost = post.userId === currentUser?.uid;
+
+  useEffect(() => {
+    loadUsername();
+  }, [post.userId]);
+
+  const loadUsername = async () => {
+    try {
+      const userRef = doc(db, 'users', post.userId);
+      const userSnap = await getDoc(userRef);
+      if (userSnap.exists()) {
+        setUsername(userSnap.data().username || '');
+      }
+    } catch (error) {
+      console.error('Error loading username:', error);
+    }
+  };
 
   const handleLike = async () => {
     try {
@@ -190,7 +207,7 @@ export default function Post({ post, postId, onPostDeleted, onPostUpdated }) {
 
   return (
     <>
-      <Card className="mb-4" data-testid={`post-${postId}`}>
+      <Card className="mb-4 dark:bg-gray-800 dark:border-gray-700" data-testid={`post-${postId}`}>
         <CardContent className="pt-6">
           <div className="flex gap-3">
             <Avatar 
@@ -203,46 +220,53 @@ export default function Post({ post, postId, onPostDeleted, onPostUpdated }) {
             
             <div className="flex-1">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col">
                   <span 
-                    className="font-semibold cursor-pointer hover:underline"
+                    className="font-semibold cursor-pointer hover:underline dark:text-white"
                     onClick={() => navigate(`/profile/${post.userId}`)}
                     data-testid="post-user-name"
                   >
                     {post.userName}
                   </span>
-                  <span className="text-xs text-gray-500" data-testid="post-timestamp">
+                  {username && (
+                    <span className="text-xs text-gray-500 dark:text-gray-400" data-testid="post-username">
+                      @{username}
+                    </span>
+                  )}
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500 dark:text-gray-400" data-testid="post-timestamp">
                     {timeAgo(post.createdAt)}
                     {post.edited && ' (edited)'}
                   </span>
+                  {isOwnPost && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" data-testid="post-menu-btn" className="dark:text-gray-300 dark:hover:bg-gray-700">
+                          <span className="material-icons text-lg">more_vert</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="dark:bg-gray-800 dark:border-gray-700">
+                        <DropdownMenuItem onClick={handleEdit} data-testid="edit-post-btn" className="dark:text-gray-300 dark:hover:bg-gray-700">
+                          <span className="material-icons text-sm mr-2">edit</span>
+                          Edit Post
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={handleDelete}
+                          className="text-red-600 dark:text-red-400 dark:hover:bg-gray-700"
+                          data-testid="delete-post-btn"
+                        >
+                          <span className="material-icons text-sm mr-2">delete</span>
+                          Delete Post
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                 </div>
-                
-                {isOwnPost && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" data-testid="post-menu-btn">
-                        <span className="material-icons text-lg">more_vert</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={handleEdit} data-testid="edit-post-btn">
-                        <span className="material-icons text-sm mr-2">edit</span>
-                        Edit Post
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={handleDelete}
-                        className="text-red-600"
-                        data-testid="delete-post-btn"
-                      >
-                        <span className="material-icons text-sm mr-2">delete</span>
-                        Delete Post
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
               </div>
               
-              <p className="mt-2 text-sm" data-testid="post-content">{post.content}</p>
+              <p className="mt-2 text-sm dark:text-gray-300" data-testid="post-content">{post.content}</p>
               
               {post.imageUrl && (
                 <img 
@@ -253,12 +277,12 @@ export default function Post({ post, postId, onPostDeleted, onPostUpdated }) {
                 />
               )}
               
-              <div className="flex items-center gap-6 mt-4 pt-3 border-t">
+              <div className="flex items-center gap-6 mt-4 pt-3 border-t dark:border-gray-700">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleLike}
-                  className={isLiked ? 'text-red-500' : ''}
+                  className={`${isLiked ? 'text-red-500' : 'dark:text-gray-300'} dark:hover:bg-gray-700`}
                   data-testid="like-btn"
                 >
                   <span className={`material-icons text-base mr-1 ${isLiked ? 'filled' : ''}`}>
@@ -272,6 +296,7 @@ export default function Post({ post, postId, onPostDeleted, onPostUpdated }) {
                   size="sm"
                   onClick={() => setShowComments(!showComments)}
                   data-testid="comment-btn"
+                  className="dark:text-gray-300 dark:hover:bg-gray-700"
                 >
                   <span className="material-icons text-base mr-1">chat_bubble_outline</span>
                   <span data-testid="comment-count">{post.commentCount || 0}</span>
@@ -282,6 +307,7 @@ export default function Post({ post, postId, onPostDeleted, onPostUpdated }) {
                   size="sm"
                   onClick={handleShare}
                   data-testid="share-btn"
+                  className="dark:text-gray-300 dark:hover:bg-gray-700"
                 >
                   <span className="material-icons text-base mr-1">share</span>
                   Share
@@ -299,7 +325,7 @@ export default function Post({ post, postId, onPostDeleted, onPostUpdated }) {
                       placeholder="Write a comment..."
                       value={newComment}
                       onChange={(e) => setNewComment(e.target.value)}
-                      className="min-h-[60px] resize-none"
+                      className="min-h-[60px] resize-none dark:bg-gray-700 dark:text-white dark:border-gray-600"
                       data-testid="comment-textarea"
                     />
                     <Button 
@@ -319,12 +345,12 @@ export default function Post({ post, postId, onPostDeleted, onPostUpdated }) {
                           <AvatarImage src={comment.userPhoto} />
                           <AvatarFallback>{comment.userName?.[0]}</AvatarFallback>
                         </Avatar>
-                        <div className="flex-1 bg-gray-50 rounded-lg px-3 py-2">
+                        <div className="flex-1 bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2">
                           <div className="flex items-center gap-2">
-                            <span className="font-semibold text-sm">{comment.userName}</span>
-                            <span className="text-xs text-gray-500">{timeAgo(comment.createdAt)}</span>
+                            <span className="font-semibold text-sm dark:text-white">{comment.userName}</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">{timeAgo(comment.createdAt)}</span>
                           </div>
-                          <p className="text-sm mt-1">{comment.content}</p>
+                          <p className="text-sm mt-1 dark:text-gray-300">{comment.content}</p>
                         </div>
                       </div>
                     ))}
@@ -338,10 +364,10 @@ export default function Post({ post, postId, onPostDeleted, onPostUpdated }) {
 
       {/* Edit Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent>
+        <DialogContent className="dark:bg-gray-800 dark:border-gray-700">
           <DialogHeader>
-            <DialogTitle>Edit Post</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="dark:text-white">Edit Post</DialogTitle>
+            <DialogDescription className="dark:text-gray-400">
               Make changes to your post content.
             </DialogDescription>
           </DialogHeader>
@@ -349,12 +375,12 @@ export default function Post({ post, postId, onPostDeleted, onPostUpdated }) {
             <Textarea
               value={editContent}
               onChange={(e) => setEditContent(e.target.value)}
-              className="min-h-[120px]"
+              className="min-h-[120px] dark:bg-gray-700 dark:text-white dark:border-gray-600"
               placeholder="What's on your mind?"
               data-testid="edit-post-textarea"
             />
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+              <Button variant="outline" onClick={() => setShowEditDialog(false)} className="dark:bg-gray-700 dark:text-white dark:border-gray-600">
                 Cancel
               </Button>
               <Button onClick={handleSaveEdit} disabled={saving || !editContent.trim()}>

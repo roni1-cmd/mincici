@@ -38,7 +38,7 @@ export default function Feed() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 pb-20 lg:pb-0">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 pb-20 lg:pb-0">
       <Navbar />
       <div className="max-w-7xl mx-auto px-4 py-4 sm:py-8">
         <div className="flex gap-6">
@@ -50,7 +50,7 @@ export default function Feed() {
             {loading ? (
               <FeedSkeleton />
             ) : posts.length === 0 ? (
-              <div className="text-center py-12 text-gray-500" data-testid="no-posts-message">
+              <div className="text-center py-12 text-gray-500 dark:text-gray-400" data-testid="no-posts-message">
                 <p className="text-lg">No posts yet. Be the first to post!</p>
               </div>
             ) : (
