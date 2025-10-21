@@ -4,11 +4,36 @@ import { Toaster } from 'sonner';
 import Login from '@/pages/Login';
 import Feed from '@/pages/Feed';
 import Profile from '@/pages/Profile';
+import Settings from '@/pages/Settings';
+import UsernameSetup from '@/pages/UsernameSetup';
 import '@/App.css';
 
 function ProtectedRoute({ children }) {
-  const { currentUser } = useAuth();
-  return currentUser ? children : <Navigate to="/login" />;
+  const { currentUser, needsUsername } = useAuth();
+  
+  if (!currentUser) {
+    return <Navigate to="/login" />;
+  }
+  
+  if (needsUsername) {
+    return <Navigate to="/username-setup" />;
+  }
+  
+  return children;
+}
+
+function UsernameRoute({ children }) {
+  const { currentUser, needsUsername } = useAuth();
+  
+  if (!currentUser) {
+    return <Navigate to="/login" />;
+  }
+  
+  if (!needsUsername) {
+    return <Navigate to="/" />;
+  }
+  
+  return children;
 }
 
 function App() {
@@ -17,6 +42,14 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route
+            path="/username-setup"
+            element={
+              <UsernameRoute>
+                <UsernameSetup />
+              </UsernameRoute>
+            }
+          />
           <Route
             path="/"
             element={
@@ -30,6 +63,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Profile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Settings />
               </ProtectedRoute>
             }
           />

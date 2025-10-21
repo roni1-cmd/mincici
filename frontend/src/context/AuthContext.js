@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import { auth, googleProvider, db } from '@/firebase/config';
 import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { useNavigate } from 'react-router-dom';
 
 const AuthContext = createContext();
 
@@ -12,6 +13,7 @@ export function useAuth() {
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [needsUsername, setNeedsUsername] = useState(false);
 
   const signInWithGoogle = async () => {
     try {
@@ -29,8 +31,13 @@ export function AuthProvider({ children }) {
           email: user.email,
           photoURL: user.photoURL,
           bio: '',
+          username: '',
+          usernameSet: false,
           createdAt: new Date().toISOString()
         });
+        setNeedsUsername(true);
+      } else if (!userSnap.data().usernameSet) {
+        setNeedsUsername(true);
       }
       
       return user;
@@ -43,6 +50,7 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     try {
       await signOut(auth);
+      setNeedsUsername(false);
     } catch (error) {
       console.error('Error signing out:', error);
       throw error;
@@ -50,8 +58,20 @@ export function AuthProvider({ children }) {
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
+      
+      if (user) {
+        // Check if user needs to set username
+        const userRef = doc(db, 'users', user.uid);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists() && !userSnap.data().usernameSet) {
+          setNeedsUsername(true);
+        } else {
+          setNeedsUsername(false);
+        }
+      }
+      
       setLoading(false);
     });
 
@@ -60,6 +80,7 @@ export function AuthProvider({ children }) {
 
   const value = {
     currentUser,
+    needsUsername,
     signInWithGoogle,
     logout
   };
