@@ -2,7 +2,6 @@ import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Home, User, Settings } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,7 +24,7 @@ export default function Navbar() {
 
   return (
     <nav className="sticky top-0 z-50 backdrop-blur-xl bg-white/80 border-b border-gray-200">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14 sm:h-16">
           <div className="flex items-center gap-4 sm:gap-8">
             <h1 
@@ -42,7 +41,7 @@ export default function Navbar() {
               data-testid="nav-home-btn"
               className="hidden sm:flex"
             >
-              <Home className="w-4 h-4 mr-2" />
+              <span className="material-icons text-xl mr-2">home</span>
               Home
             </Button>
           </div>
@@ -55,7 +54,7 @@ export default function Navbar() {
               data-testid="nav-home-mobile"
               className="sm:hidden"
             >
-              <Home className="w-4 h-4" />
+              <span className="material-icons text-xl">home</span>
             </Button>
             
             <DropdownMenu>
@@ -73,14 +72,14 @@ export default function Navbar() {
                   onClick={() => navigate(`/profile/${currentUser?.uid}`)}
                   data-testid="menu-profile-btn"
                 >
-                  <User className="w-4 h-4 mr-2" />
+                  <span className="material-icons text-lg mr-2">person</span>
                   Profile
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   onClick={() => navigate('/settings')}
                   data-testid="menu-settings-btn"
                 >
-                  <Settings className="w-4 h-4 mr-2" />
+                  <span className="material-icons text-lg mr-2">settings</span>
                   Settings
                 </DropdownMenuItem>
               </DropdownMenuContent>

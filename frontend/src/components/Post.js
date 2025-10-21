@@ -6,11 +6,16 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Heart, MessageCircle, Share2, Send } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 
-export default function Post({ post, postId }) {
+export default function Post({ post, postId, onPostDeleted }) {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
   const [likes, setLikes] = useState(post.likes || []);
@@ -18,8 +23,10 @@ export default function Post({ post, postId }) {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [loadingComment, setLoadingComment] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const isLiked = likes.includes(currentUser?.uid);
+  const isOwnPost = post.userId === currentUser?.uid;
 
   const handleLike = async () => {
     try {
@@ -96,6 +103,33 @@ export default function Post({ post, postId }) {
     }
   };
 
+  const handleDelete = async () => {
+    if (!window.confirm('Are you sure you want to delete this post?')) {
+      return;
+    }
+
+    setDeleting(true);
+    try {
+      // Delete all comments for this post
+      const commentsQuery = query(collection(db, 'comments'), where('postId', '==', postId));
+      const commentsSnapshot = await getDocs(commentsQuery);
+      const deleteCommentPromises = commentsSnapshot.docs.map(doc => 
+        deleteDoc(doc.ref)
+      );
+      await Promise.all(deleteCommentPromises);
+
+      // Delete the post
+      await deleteDoc(doc(db, 'posts', postId));
+      
+      toast.success('Post deleted successfully');
+      if (onPostDeleted) onPostDeleted();
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      toast.error('Failed to delete post');
+      setDeleting(false);
+    }
+  };
+
   useEffect(() => {
     if (showComments) {
       loadComments();
@@ -117,6 +151,10 @@ export default function Post({ post, postId }) {
     return Math.floor(seconds) + 's';
   };
 
+  if (deleting) {
+    return null;
+  }
+
   return (
     <Card className="mb-4" data-testid={`post-${postId}`}>
       <CardContent className="pt-6">
@@ -130,17 +168,39 @@ export default function Post({ post, postId }) {
           </Avatar>
           
           <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <span 
-                className="font-semibold cursor-pointer hover:underline"
-                onClick={() => navigate(`/profile/${post.userId}`)}
-                data-testid="post-user-name"
-              >
-                {post.userName}
-              </span>
-              <span className="text-xs text-gray-500" data-testid="post-timestamp">
-                {timeAgo(post.createdAt)}
-              </span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span 
+                  className="font-semibold cursor-pointer hover:underline"
+                  onClick={() => navigate(`/profile/${post.userId}`)}
+                  data-testid="post-user-name"
+                >
+                  {post.userName}
+                </span>
+                <span className="text-xs text-gray-500" data-testid="post-timestamp">
+                  {timeAgo(post.createdAt)}
+                </span>
+              </div>
+              
+              {isOwnPost && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" data-testid="post-menu-btn">
+                      <span className="material-icons text-lg">more_vert</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem 
+                      onClick={handleDelete}
+                      className="text-red-600"
+                      data-testid="delete-post-btn"
+                    >
+                      <span className="material-icons text-sm mr-2">delete</span>
+                      Delete Post
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
             
             <p className="mt-2 text-sm" data-testid="post-content">{post.content}</p>
@@ -162,7 +222,9 @@ export default function Post({ post, postId }) {
                 className={isLiked ? 'text-red-500' : ''}
                 data-testid="like-btn"
               >
-                <Heart className={`w-4 h-4 mr-1 ${isLiked ? 'fill-current' : ''}`} />
+                <span className={`material-icons text-base mr-1 ${isLiked ? 'filled' : ''}`}>
+                  {isLiked ? 'favorite' : 'favorite_border'}
+                </span>
                 <span data-testid="like-count">{likes.length}</span>
               </Button>
               
@@ -172,7 +234,7 @@ export default function Post({ post, postId }) {
                 onClick={() => setShowComments(!showComments)}
                 data-testid="comment-btn"
               >
-                <MessageCircle className="w-4 h-4 mr-1" />
+                <span className="material-icons text-base mr-1">chat_bubble_outline</span>
                 <span data-testid="comment-count">{post.commentCount || 0}</span>
               </Button>
               
@@ -182,7 +244,7 @@ export default function Post({ post, postId }) {
                 onClick={handleShare}
                 data-testid="share-btn"
               >
-                <Share2 className="w-4 h-4 mr-1" />
+                <span className="material-icons text-base mr-1">share</span>
                 Share
               </Button>
             </div>
@@ -207,7 +269,7 @@ export default function Post({ post, postId }) {
                     disabled={loadingComment || !newComment.trim()}
                     data-testid="comment-submit-btn"
                   >
-                    <Send className="w-4 h-4" />
+                    <span className="material-icons text-base">send</span>
                   </Button>
                 </form>
                 

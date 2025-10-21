@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Image, Send, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function CreatePost({ onPostCreated }) {
@@ -102,7 +101,7 @@ export default function CreatePost({ onPostCreated }) {
                     onClick={removeImage}
                     data-testid="remove-image-btn"
                   >
-                    <X className="w-4 h-4" />
+                    <span className="material-icons text-base">close</span>
                   </Button>
                 </div>
               )}
@@ -111,7 +110,7 @@ export default function CreatePost({ onPostCreated }) {
                 <label htmlFor="image-upload" className="cursor-pointer">
                   <Button type="button" variant="ghost" size="sm" asChild>
                     <span data-testid="upload-image-btn" className="text-xs sm:text-sm">
-                      <Image className="w-4 h-4 mr-1 sm:mr-2" />
+                      <span className="material-icons text-xl mr-1 sm:mr-2">image</span>
                       <span className="hidden sm:inline">Add Photo</span>
                     </span>
                   </Button>
@@ -131,7 +130,7 @@ export default function CreatePost({ onPostCreated }) {
                   data-testid="post-submit-btn"
                   className="text-xs sm:text-sm"
                 >
-                  <Send className="w-4 h-4 mr-1 sm:mr-2" />
+                  <span className="material-icons text-base mr-1 sm:mr-2">send</span>
                   {loading ? 'Posting...' : 'Post'}
                 </Button>
               </div>

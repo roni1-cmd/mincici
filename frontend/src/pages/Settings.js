@@ -10,7 +10,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { uploadToCloudinary } from '@/config/cloudinary';
-import { Save, Upload, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Settings() {
@@ -116,7 +115,7 @@ export default function Settings() {
                 <label htmlFor="photo-upload" className="cursor-pointer">
                   <Button type="button" variant="outline" disabled={uploading} asChild>
                     <span data-testid="upload-photo-btn">
-                      <Upload className="w-4 h-4 mr-2" />
+                      <span className="material-icons text-base mr-2">upload</span>
                       {uploading ? 'Uploading...' : 'Change Photo'}
                     </span>
                   </Button>
@@ -181,7 +180,7 @@ export default function Settings() {
                 className="flex-1"
                 data-testid="save-settings-btn"
               >
-                <Save className="w-4 h-4 mr-2" />
+                <span className="material-icons text-base mr-2">save</span>
                 {loading ? 'Saving...' : 'Save Changes'}
               </Button>
               <Button
@@ -190,7 +189,7 @@ export default function Settings() {
                 className="flex-1"
                 data-testid="logout-btn"
               >
-                <LogOut className="w-4 h-4 mr-2" />
+                <span className="material-icons text-base mr-2">logout</span>
                 Logout
               </Button>
             </div>

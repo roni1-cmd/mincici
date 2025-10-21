@@ -19,6 +19,11 @@ export const uploadToCloudinary = async (file) => {
         body: formData
       }
     );
+    
+    if (!response.ok) {
+      throw new Error(`Upload failed: ${response.statusText}`);
+    }
+    
     const data = await response.json();
     return data.secure_url;
   } catch (error) {
