@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db } from '@/firebase/config';
-import { doc, getDoc, collection, query, where, getDocs, orderBy, updateDoc, arrayUnion, arrayRemove, addDoc, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, orderBy, addDoc, deleteDoc } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
 import Navbar from '@/components/Navbar';
+import { MobileBottomNav } from '@/components/Sidebar';
 import Post from '@/components/Post';
+import { ProfileSkeleton, PostSkeleton } from '@/components/Skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { UserPlus, UserMinus, Edit2, Save } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Profile() {
@@ -33,7 +34,6 @@ export default function Profile() {
 
   const loadProfile = async () => {
     try {
-      // Load user data
       const userRef = doc(db, 'users', userId);
       const userSnap = await getDoc(userRef);
       
@@ -43,7 +43,6 @@ export default function Profile() {
         setBio(userData.bio || '');
       }
 
-      // Load user's posts
       const postsQuery = query(
         collection(db, 'posts'),
         where('userId', '==', userId),
@@ -52,7 +51,6 @@ export default function Profile() {
       const postsSnap = await getDocs(postsQuery);
       setPosts(postsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
 
-      // Load followers
       const followersQuery = query(
         collection(db, 'follows'),
         where('followingId', '==', userId)
@@ -60,7 +58,6 @@ export default function Profile() {
       const followersSnap = await getDocs(followersQuery);
       setFollowers(followersSnap.docs.map(doc => doc.data().followerId));
 
-      // Load following
       const followingQuery = query(
         collection(db, 'follows'),
         where('followerId', '==', userId)
@@ -68,7 +65,6 @@ export default function Profile() {
       const followingSnap = await getDocs(followingQuery);
       setFollowing(followingSnap.docs.map(doc => doc.data().followingId));
 
-      // Check if current user follows this profile
       if (currentUser && currentUser.uid !== userId) {
         const isFollowingQuery = query(
           collection(db, 'follows'),
@@ -88,7 +84,6 @@ export default function Profile() {
   const handleFollow = async () => {
     try {
       if (isFollowing) {
-        // Unfollow
         const followQuery = query(
           collection(db, 'follows'),
           where('followerId', '==', currentUser.uid),
@@ -102,7 +97,6 @@ export default function Profile() {
         setFollowers(followers.filter(id => id !== currentUser.uid));
         toast.success('Unfollowed');
       } else {
-        // Follow
         await addDoc(collection(db, 'follows'), {
           followerId: currentUser.uid,
           followingId: userId,
@@ -133,28 +127,34 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 pb-20 lg:pb-0">
         <Navbar />
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <ProfileSkeleton />
+          <div className="space-y-4">
+            <PostSkeleton />
+            <PostSkeleton />
+          </div>
         </div>
+        <MobileBottomNav />
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 pb-20 lg:pb-0">
         <Navbar />
         <div className="text-center py-12">
           <p>User not found</p>
         </div>
+        <MobileBottomNav />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 pb-20 lg:pb-0">
       <Navbar />
       <div className="max-w-4xl mx-auto px-4 py-8">
         <Card className="mb-6" data-testid="profile-card">
@@ -175,9 +175,9 @@ export default function Profile() {
                       data-testid="follow-btn"
                     >
                       {isFollowing ? (
-                        <><UserMinus className="w-4 h-4 mr-2" />Unfollow</>
+                        <><span className="material-icons text-base mr-2">person_remove</span>Unfollow</>
                       ) : (
-                        <><UserPlus className="w-4 h-4 mr-2" />Follow</>
+                        <><span className="material-icons text-base mr-2">person_add</span>Follow</>
                       )}
                     </Button>
                   )}
@@ -209,7 +209,7 @@ export default function Profile() {
                     />
                     <div className="flex gap-2">
                       <Button size="sm" onClick={handleSaveBio} data-testid="save-bio-btn">
-                        <Save className="w-4 h-4 mr-2" />
+                        <span className="material-icons text-base mr-2">save</span>
                         Save
                       </Button>
                       <Button size="sm" variant="outline" onClick={() => setEditingBio(false)}>
@@ -230,7 +230,7 @@ export default function Profile() {
                         className="mt-2"
                         data-testid="edit-bio-btn"
                       >
-                        <Edit2 className="w-4 h-4 mr-2" />
+                        <span className="material-icons text-base mr-2">edit</span>
                         Edit Bio
                       </Button>
                     )}
@@ -250,10 +250,11 @@ export default function Profile() {
               </CardContent>
             </Card>
           ) : (
-            posts.map(post => <Post key={post.id} post={post} postId={post.id} />)
+            posts.map(post => <Post key={post.id} post={post} postId={post.id} onPostDeleted={loadProfile} onPostUpdated={loadProfile} />)
           )}
         </div>
       </div>
+      <MobileBottomNav />
     </div>
   );
 }

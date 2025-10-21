@@ -4,6 +4,7 @@ import { db } from '@/firebase/config';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
 import Navbar from '@/components/Navbar';
+import { MobileBottomNav } from '@/components/Sidebar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -62,7 +63,7 @@ export default function Settings() {
       toast.success('Photo uploaded successfully!');
     } catch (error) {
       console.error('Error uploading photo:', error);
-      toast.error('Failed to upload photo');
+      toast.error('Failed to upload photo. Please check your Cloudinary settings.');
     } finally {
       setUploading(false);
     }
@@ -96,7 +97,7 @@ export default function Settings() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 pb-20 lg:pb-0">
       <Navbar />
       <div className="max-w-2xl mx-auto px-4 py-8">
         <Card data-testid="settings-card">
@@ -105,7 +106,6 @@ export default function Settings() {
             <CardDescription>Manage your mincici profile settings</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Profile Photo */}
             <div className="flex flex-col sm:flex-row items-center gap-4">
               <Avatar className="w-24 h-24" data-testid="settings-avatar">
                 <AvatarImage src={userData.photoURL} />
@@ -131,7 +131,6 @@ export default function Settings() {
               </div>
             </div>
 
-            {/* Display Name */}
             <div>
               <label className="text-sm font-medium mb-2 block">Display Name</label>
               <Input
@@ -143,7 +142,6 @@ export default function Settings() {
               />
             </div>
 
-            {/* Username (Read-only) */}
             <div>
               <label className="text-sm font-medium mb-2 block">Username</label>
               <Input
@@ -156,7 +154,6 @@ export default function Settings() {
               <p className="text-xs text-gray-500 mt-1">Username cannot be changed</p>
             </div>
 
-            {/* Bio */}
             <div>
               <label className="text-sm font-medium mb-2 block">Bio</label>
               <Textarea
@@ -172,7 +169,6 @@ export default function Settings() {
               </p>
             </div>
 
-            {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 pt-4">
               <Button
                 onClick={handleSave}
@@ -196,6 +192,7 @@ export default function Settings() {
           </CardContent>
         </Card>
       </div>
+      <MobileBottomNav />
     </div>
   );
 }

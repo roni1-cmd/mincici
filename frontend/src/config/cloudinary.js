@@ -1,19 +1,16 @@
 export const cloudinaryConfig = {
   cloudName: 'dwnzxkata',
-  apiKey: 'foxncici',
-  apiSecret: 'RjFyDld3S1ZhXBenHhZgNIECCwo',
   uploadPreset: 'ml_default'
 };
 
 export const uploadToCloudinary = async (file) => {
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('upload_preset', 'ml_default');
-  formData.append('cloud_name', cloudinaryConfig.cloudName);
+  formData.append('upload_preset', cloudinaryConfig.uploadPreset);
 
   try {
     const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/image/upload`,
+      `https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/auto/upload`,
       {
         method: 'POST',
         body: formData
@@ -21,7 +18,9 @@ export const uploadToCloudinary = async (file) => {
     );
     
     if (!response.ok) {
-      throw new Error(`Upload failed: ${response.statusText}`);
+      const errorData = await response.text();
+      console.error('Cloudinary error:', errorData);
+      throw new Error('Upload failed. Please check your Cloudinary settings.');
     }
     
     const data = await response.json();

@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,7 +16,7 @@ import {
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 
-export default function Post({ post, postId, onPostDeleted }) {
+export default function Post({ post, postId, onPostDeleted, onPostUpdated }) {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
   const [likes, setLikes] = useState(post.likes || []);
@@ -24,6 +25,9 @@ export default function Post({ post, postId, onPostDeleted }) {
   const [newComment, setNewComment] = useState('');
   const [loadingComment, setLoadingComment] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editContent, setEditContent] = useState(post.content || '');
+  const [saving, setSaving] = useState(false);
 
   const isLiked = likes.includes(currentUser?.uid);
   const isOwnPost = post.userId === currentUser?.uid;
@@ -103,6 +107,37 @@ export default function Post({ post, postId, onPostDeleted }) {
     }
   };
 
+  const handleEdit = () => {
+    setEditContent(post.content || '');
+    setShowEditDialog(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editContent.trim()) {
+      toast.error('Post content cannot be empty');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const postRef = doc(db, 'posts', postId);
+      await updateDoc(postRef, {
+        content: editContent.trim(),
+        edited: true,
+        editedAt: new Date().toISOString()
+      });
+      
+      toast.success('Post updated successfully');
+      setShowEditDialog(false);
+      if (onPostUpdated) onPostUpdated();
+    } catch (error) {
+      console.error('Error updating post:', error);
+      toast.error('Failed to update post');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!window.confirm('Are you sure you want to delete this post?')) {
       return;
@@ -110,7 +145,6 @@ export default function Post({ post, postId, onPostDeleted }) {
 
     setDeleting(true);
     try {
-      // Delete all comments for this post
       const commentsQuery = query(collection(db, 'comments'), where('postId', '==', postId));
       const commentsSnapshot = await getDocs(commentsQuery);
       const deleteCommentPromises = commentsSnapshot.docs.map(doc => 
@@ -118,7 +152,6 @@ export default function Post({ post, postId, onPostDeleted }) {
       );
       await Promise.all(deleteCommentPromises);
 
-      // Delete the post
       await deleteDoc(doc(db, 'posts', postId));
       
       toast.success('Post deleted successfully');
@@ -156,145 +189,181 @@ export default function Post({ post, postId, onPostDeleted }) {
   }
 
   return (
-    <Card className="mb-4" data-testid={`post-${postId}`}>
-      <CardContent className="pt-6">
-        <div className="flex gap-3">
-          <Avatar 
-            className="w-10 h-10 cursor-pointer"
-            onClick={() => navigate(`/profile/${post.userId}`)}
-          >
-            <AvatarImage src={post.userPhoto} />
-            <AvatarFallback>{post.userName?.[0]}</AvatarFallback>
-          </Avatar>
-          
-          <div className="flex-1">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span 
-                  className="font-semibold cursor-pointer hover:underline"
-                  onClick={() => navigate(`/profile/${post.userId}`)}
-                  data-testid="post-user-name"
-                >
-                  {post.userName}
-                </span>
-                <span className="text-xs text-gray-500" data-testid="post-timestamp">
-                  {timeAgo(post.createdAt)}
-                </span>
+    <>
+      <Card className="mb-4" data-testid={`post-${postId}`}>
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <Avatar 
+              className="w-10 h-10 cursor-pointer"
+              onClick={() => navigate(`/profile/${post.userId}`)}
+            >
+              <AvatarImage src={post.userPhoto} />
+              <AvatarFallback>{post.userName?.[0]}</AvatarFallback>
+            </Avatar>
+            
+            <div className="flex-1">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span 
+                    className="font-semibold cursor-pointer hover:underline"
+                    onClick={() => navigate(`/profile/${post.userId}`)}
+                    data-testid="post-user-name"
+                  >
+                    {post.userName}
+                  </span>
+                  <span className="text-xs text-gray-500" data-testid="post-timestamp">
+                    {timeAgo(post.createdAt)}
+                    {post.edited && ' (edited)'}
+                  </span>
+                </div>
+                
+                {isOwnPost && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" data-testid="post-menu-btn">
+                        <span className="material-icons text-lg">more_vert</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={handleEdit} data-testid="edit-post-btn">
+                        <span className="material-icons text-sm mr-2">edit</span>
+                        Edit Post
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={handleDelete}
+                        className="text-red-600"
+                        data-testid="delete-post-btn"
+                      >
+                        <span className="material-icons text-sm mr-2">delete</span>
+                        Delete Post
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </div>
               
-              {isOwnPost && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" data-testid="post-menu-btn">
-                      <span className="material-icons text-lg">more_vert</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem 
-                      onClick={handleDelete}
-                      className="text-red-600"
-                      data-testid="delete-post-btn"
+              <p className="mt-2 text-sm" data-testid="post-content">{post.content}</p>
+              
+              {post.imageUrl && (
+                <img 
+                  src={post.imageUrl} 
+                  alt="Post" 
+                  className="mt-3 rounded-lg w-full max-h-96 object-cover"
+                  data-testid="post-image"
+                />
+              )}
+              
+              <div className="flex items-center gap-6 mt-4 pt-3 border-t">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleLike}
+                  className={isLiked ? 'text-red-500' : ''}
+                  data-testid="like-btn"
+                >
+                  <span className={`material-icons text-base mr-1 ${isLiked ? 'filled' : ''}`}>
+                    {isLiked ? 'favorite' : 'favorite_border'}
+                  </span>
+                  <span data-testid="like-count">{likes.length}</span>
+                </Button>
+                
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowComments(!showComments)}
+                  data-testid="comment-btn"
+                >
+                  <span className="material-icons text-base mr-1">chat_bubble_outline</span>
+                  <span data-testid="comment-count">{post.commentCount || 0}</span>
+                </Button>
+                
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleShare}
+                  data-testid="share-btn"
+                >
+                  <span className="material-icons text-base mr-1">share</span>
+                  Share
+                </Button>
+              </div>
+              
+              {showComments && (
+                <div className="mt-4 space-y-4" data-testid="comments-section">
+                  <form onSubmit={handleComment} className="flex gap-2">
+                    <Avatar className="w-8 h-8">
+                      <AvatarImage src={currentUser?.photoURL} />
+                      <AvatarFallback>{currentUser?.displayName?.[0]}</AvatarFallback>
+                    </Avatar>
+                    <Textarea
+                      placeholder="Write a comment..."
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      className="min-h-[60px] resize-none"
+                      data-testid="comment-textarea"
+                    />
+                    <Button 
+                      type="submit" 
+                      size="icon"
+                      disabled={loadingComment || !newComment.trim()}
+                      data-testid="comment-submit-btn"
                     >
-                      <span className="material-icons text-sm mr-2">delete</span>
-                      Delete Post
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                      <span className="material-icons text-base">send</span>
+                    </Button>
+                  </form>
+                  
+                  <div className="space-y-3">
+                    {comments.map(comment => (
+                      <div key={comment.id} className="flex gap-2" data-testid={`comment-${comment.id}`}>
+                        <Avatar className="w-8 h-8">
+                          <AvatarImage src={comment.userPhoto} />
+                          <AvatarFallback>{comment.userName?.[0]}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 bg-gray-50 rounded-lg px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-sm">{comment.userName}</span>
+                            <span className="text-xs text-gray-500">{timeAgo(comment.createdAt)}</span>
+                          </div>
+                          <p className="text-sm mt-1">{comment.content}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
-            
-            <p className="mt-2 text-sm" data-testid="post-content">{post.content}</p>
-            
-            {post.imageUrl && (
-              <img 
-                src={post.imageUrl} 
-                alt="Post" 
-                className="mt-3 rounded-lg w-full max-h-96 object-cover"
-                data-testid="post-image"
-              />
-            )}
-            
-            <div className="flex items-center gap-6 mt-4 pt-3 border-t">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLike}
-                className={isLiked ? 'text-red-500' : ''}
-                data-testid="like-btn"
-              >
-                <span className={`material-icons text-base mr-1 ${isLiked ? 'filled' : ''}`}>
-                  {isLiked ? 'favorite' : 'favorite_border'}
-                </span>
-                <span data-testid="like-count">{likes.length}</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Edit Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Post</DialogTitle>
+            <DialogDescription>
+              Make changes to your post content.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Textarea
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              className="min-h-[120px]"
+              placeholder="What's on your mind?"
+              data-testid="edit-post-textarea"
+            />
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+                Cancel
               </Button>
-              
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowComments(!showComments)}
-                data-testid="comment-btn"
-              >
-                <span className="material-icons text-base mr-1">chat_bubble_outline</span>
-                <span data-testid="comment-count">{post.commentCount || 0}</span>
-              </Button>
-              
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleShare}
-                data-testid="share-btn"
-              >
-                <span className="material-icons text-base mr-1">share</span>
-                Share
+              <Button onClick={handleSaveEdit} disabled={saving || !editContent.trim()}>
+                {saving ? 'Saving...' : 'Save Changes'}
               </Button>
             </div>
-            
-            {showComments && (
-              <div className="mt-4 space-y-4" data-testid="comments-section">
-                <form onSubmit={handleComment} className="flex gap-2">
-                  <Avatar className="w-8 h-8">
-                    <AvatarImage src={currentUser?.photoURL} />
-                    <AvatarFallback>{currentUser?.displayName?.[0]}</AvatarFallback>
-                  </Avatar>
-                  <Textarea
-                    placeholder="Write a comment..."
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    className="min-h-[60px] resize-none"
-                    data-testid="comment-textarea"
-                  />
-                  <Button 
-                    type="submit" 
-                    size="icon"
-                    disabled={loadingComment || !newComment.trim()}
-                    data-testid="comment-submit-btn"
-                  >
-                    <span className="material-icons text-base">send</span>
-                  </Button>
-                </form>
-                
-                <div className="space-y-3">
-                  {comments.map(comment => (
-                    <div key={comment.id} className="flex gap-2" data-testid={`comment-${comment.id}`}>
-                      <Avatar className="w-8 h-8">
-                        <AvatarImage src={comment.userPhoto} />
-                        <AvatarFallback>{comment.userName?.[0]}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 bg-gray-50 rounded-lg px-3 py-2">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-sm">{comment.userName}</span>
-                          <span className="text-xs text-gray-500">{timeAgo(comment.createdAt)}</span>
-                        </div>
-                        <p className="text-sm mt-1">{comment.content}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
