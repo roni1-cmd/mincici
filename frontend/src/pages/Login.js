@@ -32,12 +32,12 @@ export default function Login() {
         <div className="w-full max-w-md space-y-8">
           <div className="space-y-4">
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-white leading-tight" style={{ fontFamily: "'Playfair Display', serif" }}>
-              Impossible?
+              Constellations?
               <br />
-              Possible.
+              Yours to command.
             </h1>
             <p className="text-xl sm:text-2xl text-gray-300">
-              The social platform for creators
+              Για την Φοξ, για την Σίσι
             </p>
           </div>
 
